@@ -1,16 +1,11 @@
-@file:OptIn(ExperimentalFoundationApi::class) // <-- ADD THIS LINE
-
 package com.example.safeair.ui.theme.screens
 
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.animation.core.FiniteAnimationSpec // Этот импорт может потребоваться
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -137,8 +132,7 @@ fun HomeScreen(
     }
 }
 
-// Файл: HomeScreen.kt
-
+// --- THIS IS THE SINGLE, CORRECT VERSION ---
 @Composable
 fun AirQualityList(
     dataList: List<AirQualityData>,
@@ -146,7 +140,9 @@ fun AirQualityList(
     modifier: Modifier = Modifier
 ) {
     if (dataList.isEmpty()) {
-        // ... (empty state content)
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // You can put a "No data available" text here if you want
+        }
     } else {
         LazyColumn(
             modifier = modifier,
@@ -160,7 +156,8 @@ fun AirQualityList(
                 AirQualityCard(
                     data = data,
                     onClick = { onCardClick(data.location) },
-                    // 🚨 УДАЛЯЕМ animateItemPlacement и tween
+                    // The experimental modifier has been removed.
+                    // We pass a default modifier to keep the layout correct.
                     modifier = Modifier
                 )
             }
@@ -181,7 +178,6 @@ fun AirQualityCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = MaterialTheme.shapes.medium
     ) {
-        // ... (Row, Image, Column content remains the same)
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -211,22 +207,26 @@ fun AirQualityCard(
 
 @Composable
 fun LoadingIndicator() {
-    // ... (This function remains the same)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
 }
 
-// --- 3. UPDATED PREVIEWS ---
+// --- PREVIEWS ---
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview_LoadedState() {
     SafeAirTheme {
-        // Preview the dumb composable by passing fake data directly. No ViewModel!
         HomeScreen(
             isLoading = false,
             airQualityList = listOf(
                 AirQualityData("1", "Los Angeles", 155, ""),
                 AirQualityData("2", "New Delhi", 250, "")
             ),
-            onCardClick = {} // Pass an empty lambda for the preview
+            onCardClick = {}
         )
     }
 }
@@ -237,7 +237,7 @@ fun HomeScreenPreview_LoadingState() {
     SafeAirTheme {
         HomeScreen(
             isLoading = true,
-            airQualityList = emptyList(), // Pass an empty list for loading state
+            airQualityList = emptyList(),
             onCardClick = {}
         )
     }
