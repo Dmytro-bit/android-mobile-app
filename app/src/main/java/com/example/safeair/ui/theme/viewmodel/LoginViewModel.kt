@@ -8,7 +8,6 @@ import com.example.safeair.api.AuthModels
 import com.example.safeair.repository.TokenManager
 
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
@@ -18,38 +17,38 @@ class LoginViewModel(
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isLoading = _isLoading.asStateFlow()
 
     private val _loginError = MutableStateFlow<String?>(null)
-    val loginError: StateFlow<String?> = _loginError.asStateFlow()
+    val loginError = _loginError.asStateFlow()
 
-    val isUserLoggedIn = tokenManager.accessToken
+    private val _loginSuccess = MutableStateFlow(false)
+    val loginSuccess = _loginSuccess.asStateFlow()
 
     fun login(username: String, password: String) {
-        _loginError.value = null
-
-
         viewModelScope.launch {
-            _isLoading.value = true
             try {
-                val request = AuthModels.LoginRequest(username, password)
+                _isLoading.value = true
+                _loginError.value = null
 
-                val response = authService.login(request) // Предполагаем, что это возвращает Response<LoginResponse>
+                val response = authService.login(AuthModels.LoginRequest(username, password))
 
                 if (response.isSuccessful) {
-                    val accessToken = response.body()?.access_token
+                    val token = response.body()?.access_token
 
-                    if (!accessToken.isNullOrEmpty()) {
-                        tokenManager.saveToken(accessToken)
+                    if (!token.isNullOrBlank()) {
+                        tokenManager.saveToken(token)
+                        _loginSuccess.value = true
                     } else {
-                        _loginError.value = response.body()?.msg ?: "Ошибка: Токен не получен."
+                        _loginError.value = "Token not received"
                     }
+
                 } else {
-                    val errorBody = response.errorBody()?.string()
-                    _loginError.value = "Ошибка входа: HTTP ${response.code()}. ${errorBody ?: "Неизвестно."}"
+                    _loginError.value = "Login failed: ${response.code()}"
                 }
+
             } catch (e: Exception) {
-                _loginError.value = "Ошибка сети или сервера: ${e.message ?: "Неизвестная ошибка"}"
+                _loginError.value = "Network error: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
