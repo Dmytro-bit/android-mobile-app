@@ -20,20 +20,23 @@ import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavController, viewModelFactory: LoginViewModelFactory) {
+    val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
+
+    val isLoading by viewModel.isLoading.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
+    val loginError by viewModel.loginError.collectAsState()
+
     var username by remember { mutableStateOf("test") }
     var password by remember { mutableStateOf("qwerty123") }
-    val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
-    val isLoading by viewModel.isLoading.collectAsState()
-    val loginError by viewModel.loginError.collectAsState()
-    val isLoggedIn by viewModel.isUserLoggedIn.collectAsState(initial = null)
 
-    LaunchedEffect(isLoggedIn) {
-        if (!isLoggedIn.isNullOrEmpty()) {
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
             navController.navigate(Screen.Home.route) {
                 popUpTo(Screen.Login.route) { inclusive = true }
             }
         }
     }
+
 
     Column(
         modifier = Modifier

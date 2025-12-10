@@ -29,7 +29,6 @@ class MainActivity : ComponentActivity() {
 
         authService = RetrofitInstance.createApiService(retrofit)
 
-        // 4. Создание фабрики ViewModel
         loginViewModelFactory = LoginViewModelFactory(
             authService = authService,
             tokenManager = tokenManager
