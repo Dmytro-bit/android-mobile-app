@@ -7,11 +7,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.safeair.ui.theme.screens.LoginScreen
+import com.example.safeair.ui.theme.viewmodel.HomeViewModelFactory
 import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 
 
 @Composable
-fun AppNavigation(loginViewModelFactory: LoginViewModelFactory) {
+fun AppNavigation(
+    loginViewModelFactory: LoginViewModelFactory,
+    homeViewModelFactory: HomeViewModelFactory
+) {
     val navController = rememberNavController()
 
     NavHost(
@@ -23,7 +27,7 @@ fun AppNavigation(loginViewModelFactory: LoginViewModelFactory) {
         }
 
         composable(Screen.Home.route) {
-            HomeScreenRoute()
+            HomeScreenRoute(viewModelFactory = homeViewModelFactory)
         }
     }
 }

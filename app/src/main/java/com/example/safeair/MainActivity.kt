@@ -11,12 +11,14 @@ import com.example.safeair.api.RetrofitInstance
 import com.example.safeair.repository.TokenManager
 import com.example.safeair.ui.theme.navigation.AppNavigation
 import com.example.safeair.ui.theme.SafeAirTheme
+import com.example.safeair.ui.theme.viewmodel.HomeViewModelFactory
 import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 
 class MainActivity : ComponentActivity() {
     private lateinit var tokenManager: TokenManager
     private lateinit var authService: ApiServices
     private lateinit var loginViewModelFactory: LoginViewModelFactory
+    private lateinit var homeViewModelFactory: HomeViewModelFactory
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +36,11 @@ class MainActivity : ComponentActivity() {
             authService = authService,
             tokenManager = tokenManager
         )
+        
+        homeViewModelFactory = HomeViewModelFactory(
+            apiService = authService
+        )
+        
         super.onCreate(savedInstanceState)
         setContent {
             SafeAirTheme {
@@ -41,7 +48,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation(loginViewModelFactory = loginViewModelFactory)
+                    AppNavigation(
+                        loginViewModelFactory = loginViewModelFactory,
+                        homeViewModelFactory = homeViewModelFactory
+                    )
                 }
             }
         }

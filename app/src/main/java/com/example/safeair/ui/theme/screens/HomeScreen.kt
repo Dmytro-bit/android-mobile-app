@@ -1,244 +1,324 @@
 package com.example.safeair.ui.theme.screens
 
-import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
-
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import com.example.safeair.ui.theme.SafeAirTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import com.example.safeair.api.WeatherResponse
+import com.example.safeair.ui.theme.viewmodel.HomeViewModel
+import com.example.safeair.ui.theme.viewmodel.HomeViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.*
 
-// --- Data Model & ViewModel (Remain Unchanged) ---
-data class AirQualityData(
-    val id: String,
-    val location: String,
-    val aqi: Int,
-    val countryFlagUrl: String
-)
-
-class HomeViewModel : ViewModel() {
-    private val _airQualityData = MutableStateFlow<List<AirQualityData>>(emptyList())
-    val airQualityData = _airQualityData.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading = _isLoading.asStateFlow()
-
-    init {
-        fetchData()
-    }
-
-    private fun fetchData() {
-        viewModelScope.launch {
-            Log.d("HomeViewModel", "Fetching initial data...")
-            _isLoading.value = true
-            delay(2000)
-            _airQualityData.value = getFakeAirQualityData()
-            _isLoading.value = false
-            Log.d("HomeViewModel", "Data fetched successfully.")
-        }
-    }
-
-    private fun getFakeAirQualityData(): List<AirQualityData> {
-        return listOf(
-            AirQualityData("1", "Los Angeles, USA", 155, "https://flagsapi.com/US/shiny/64.png"),
-            AirQualityData("2", "New Delhi, IND", 250, "https://flagsapi.com/IN/shiny/64.png"),
-            AirQualityData("3", "Beijing, CHN", 180, "https://flagsapi.com/CN/shiny/64.png"),
-            AirQualityData("4", "London, GBR", 45, "https://flagsapi.com/GB/shiny/64.png"),
-            AirQualityData("5", "Sydney, AUS", 30, "https://flagsapi.com/AU/shiny/64.png"),
-            AirQualityData("6", "Tokyo, JPN", 55, "https://flagsapi.com/JP/shiny/64.png")
-        )
-    }
-}
-
-// --- 1. SMART COMPOSABLE (Entry Point) ---
 @Composable
 fun HomeScreenRoute(
-    viewModel: HomeViewModel = viewModel()
+    viewModelFactory: HomeViewModelFactory? = null,
+    viewModel: HomeViewModel = if (viewModelFactory != null) {
+        androidx.lifecycle.viewmodel.compose.viewModel(factory = viewModelFactory)
+    } else {
+        viewModel()
+    }
 ) {
-    // This composable holds the state and logic
-    val airQualityList by viewModel.airQualityData.collectAsState()
+    val weatherData by viewModel.weatherData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
-    // Pass the state and events down to the dumb UI composable
     HomeScreen(
+        weatherData = weatherData,
         isLoading = isLoading,
-        airQualityList = airQualityList,
-        onCardClick = { location ->
-            Log.d("HomeScreenRoute", "Card clicked for location: $location")
-            // Handle navigation or other actions here
-        }
+        error = error
     )
 }
 
-// --- 2. DUMB COMPOSABLE (Stateless UI) ---
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    weatherData: WeatherResponse?,
     isLoading: Boolean,
-    airQualityList: List<AirQualityData>,
-    onCardClick: (String) -> Unit, // Event passed as a lambda
-    modifier: Modifier = Modifier
+    error: String?
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Safe Air") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
+    val context = LocalContext.current
+    
+    // Determine if it's day or night based on current time and sunrise/sunset
+    val isDay = weatherData?.let { data ->
+        val currentTime = System.currentTimeMillis() / 1000
+        // Use current time from API if available, otherwise use system time
+        val timeToCheck = if (data.current.dt > 0) data.current.dt else currentTime
+        timeToCheck >= data.current.sunrise && timeToCheck < data.current.sunset
+    } ?: true
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background Image
+        Image(
+            painter = painterResource(
+                id = if (isDay) R.drawable.day else R.drawable.night
+            ),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Content
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(16.dp)
         ) {
-            AirQualityList(
-                dataList = airQualityList,
-                onCardClick = onCardClick, // Pass the event down
-                modifier = Modifier.fillMaxSize()
-            )
+            // Top Bar
+            TopBar()
 
-            AnimatedVisibility(
-                visible = isLoading,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                LoadingIndicator()
-            }
-        }
-    }
-}
+            Spacer(modifier = Modifier.weight(1f))
 
-// --- THIS IS THE SINGLE, CORRECT VERSION ---
-@Composable
-fun AirQualityList(
-    dataList: List<AirQualityData>,
-    onCardClick: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (dataList.isEmpty()) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            // You can put a "No data available" text here if you want
-        }
-    } else {
-        LazyColumn(
-            modifier = modifier,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(
-                items = dataList,
-                key = { it.id }
-            ) { data ->
-                AirQualityCard(
-                    data = data,
-                    onClick = { onCardClick(data.location) },
-                    // The experimental modifier has been removed.
-                    // We pass a default modifier to keep the layout correct.
-                    modifier = Modifier
+            // Current Weather Card
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    color = Color.White
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class) // Needed for clickable Card in M3
-@Composable
-fun AirQualityCard(
-    data: AirQualityData,
-    onClick: () -> Unit, // Accept the event
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick, // Make the Card clickable
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Image(
-                painter = rememberAsyncImagePainter(model = data.countryFlagUrl),
-                contentDescription = "${data.location} Flag",
-                modifier = Modifier.size(50.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.weight(1f)) {
+            } else if (error != null) {
                 Text(
-                    text = data.location,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    text = error,
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
-                Text(
-                    text = "Air Quality Index: ${data.aqi}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            } else if (weatherData != null) {
+                CurrentWeatherCard(weatherData)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Forecast Panel
+            if (weatherData != null) {
+                ForecastPanel(weatherData.daily.take(5), isDay)
             }
         }
     }
 }
 
 @Composable
-fun LoadingIndicator() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+fun TopBar() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        CircularProgressIndicator()
-    }
-}
+        // Hamburger Menu
+        IconButton(onClick = { /* Handle menu click */ }) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Menu",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
 
-// --- PREVIEWS ---
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview_LoadedState() {
-    SafeAirTheme {
-        HomeScreen(
-            isLoading = false,
-            airQualityList = listOf(
-                AirQualityData("1", "Los Angeles", 155, ""),
-                AirQualityData("2", "New Delhi", 250, "")
+        // ADD Button
+        Button(
+            onClick = { /* Handle add click */ },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White.copy(alpha = 0.3f)
             ),
-            onCardClick = {}
-        )
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.height(36.dp)
+        ) {
+            Text(
+                text = "ADD",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
-@Preview(showBackground = true, name = "Loading State")
 @Composable
-fun HomeScreenPreview_LoadingState() {
-    SafeAirTheme {
-        HomeScreen(
-            isLoading = true,
-            airQualityList = emptyList(),
-            onCardClick = {}
+fun CurrentWeatherCard(weatherData: WeatherResponse) {
+    val current = weatherData.current
+    val location = weatherData.timezone.split("/").lastOrNull() ?: weatherData.timezone
+    
+    // Convert Kelvin to Celsius (if temp > 100, assume it's Kelvin)
+    val tempCelsius = if (current.temp > 100) {
+        (current.temp - 273.15).toInt()
+    } else {
+        current.temp.toInt()
+    }
+    
+    // Format date
+    val dateFormat = SimpleDateFormat("EEEE dd/M/yyyy", Locale.getDefault())
+    val date = dateFormat.format(Date(current.dt * 1000))
+    
+    // Weather icon URL
+    val iconUrl = "https://openweathermap.org/img/wn/${current.weather.firstOrNull()?.icon}@2x.png"
+    val isDay = current.dt >= weatherData.current.sunrise && current.dt < weatherData.current.sunset
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDay) {
+                Color.White.copy(alpha = 0.25f)
+            } else {
+                Color(0xFF2D1B3D).copy(alpha = 0.6f)
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Weather Icon
+            Image(
+                painter = rememberAsyncImagePainter(iconUrl),
+                contentDescription = current.weather.firstOrNull()?.description,
+                modifier = Modifier.size(120.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Location
+            Text(
+                text = location,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Temperature
+            Text(
+                text = "$tempCelsius°C",
+                fontSize = 64.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Date
+            Text(
+                text = date,
+                fontSize = 18.sp,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+@Composable
+fun ForecastPanel(dailyForecast: List<com.example.safeair.api.DailyWeather>, isDay: Boolean) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDay) {
+                Color(0xFFE8E8E8).copy(alpha = 0.4f)
+            } else {
+                Color(0xFF2D1B3D).copy(alpha = 0.7f)
+            }
+        )
+    ) {
+        LazyRow(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp)
+        ) {
+            items(dailyForecast) { day ->
+                ForecastDayItem(day, isDay)
+            }
+        }
+
+        // Scroll indicator
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .background(
+                        Color.White.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(2.dp)
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+fun ForecastDayItem(day: com.example.safeair.api.DailyWeather, isDay: Boolean) {
+    val dateFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+    val dayName = dateFormat.format(Date(day.dt * 1000))
+    
+    // Convert Kelvin to Celsius (if temp > 100, assume it's Kelvin)
+    val tempCelsius = if (day.temp.day > 100) {
+        (day.temp.day - 273.15).toInt()
+    } else {
+        day.temp.day.toInt()
+    }
+    
+    // Weather icon URL
+    val iconUrl = "https://openweathermap.org/img/wn/${day.weather.firstOrNull()?.icon}@2x.png"
+
+    Column(
+        modifier = Modifier
+            .width(100.dp)
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Day name
+        Text(
+            text = dayName,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+
+        // Weather Icon
+        Image(
+            painter = rememberAsyncImagePainter(iconUrl),
+            contentDescription = day.weather.firstOrNull()?.description,
+            modifier = Modifier.size(48.dp)
+        )
+
+        // Temperature
+        Text(
+            text = "$tempCelsius°C",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
         )
     }
 }

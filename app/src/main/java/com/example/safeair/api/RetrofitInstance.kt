@@ -6,7 +6,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-private const val BASE_URL = "https://safe-air.org/"
+private const val BASE_URL = "https://api.openweathermap.org/data/3.0/onecall"
 
 object RetrofitInstance {
     fun createOkHttpClient(tokenManager: TokenManager): OkHttpClient {
