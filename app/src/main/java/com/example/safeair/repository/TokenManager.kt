@@ -26,7 +26,7 @@ class TokenManager private constructor(context: Context) {
             }
         }
     }
-        suspend fun saveAccessToken(accessToken: String) {
+        suspend fun saveToken(accessToken: String) {
             dataStore.edit { preferences ->
                 preferences[KEY_ACCESS_TOKEN] = accessToken
             }
@@ -35,6 +35,7 @@ class TokenManager private constructor(context: Context) {
             preferences[KEY_ACCESS_TOKEN]
         }
         suspend fun getAccessToken(): String? = accessToken.first()
+
         suspend fun clearTokens() {
             dataStore.edit { preferences ->
                 preferences.remove(KEY_ACCESS_TOKEN)

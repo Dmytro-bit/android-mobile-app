@@ -2,30 +2,27 @@ package com.example.safeair.ui.theme.navigation
 
 import com.example.safeair.ui.theme.screens.HomeScreenRoute
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.safeair.ui.theme.navigation.Screen
 import com.example.safeair.ui.theme.screens.LoginScreen
+import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(loginViewModelFactory: LoginViewModelFactory) {
     val navController = rememberNavController()
 
-    // NavHost is the container for all navigation destinations
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route // The app starts at the Login screen
+        startDestination = Screen.Login.route
     ) {
-        // Define the Login screen destination
         composable(Screen.Login.route) {
-            LoginScreen(navController = navController)
+            LoginScreen(navController = navController, viewModelFactory = loginViewModelFactory)
         }
 
-        // Define the Home screen destination
         composable(Screen.Home.route) {
-            // 2. CALL THIS FUNCTION INSTEAD
             HomeScreenRoute()
         }
     }

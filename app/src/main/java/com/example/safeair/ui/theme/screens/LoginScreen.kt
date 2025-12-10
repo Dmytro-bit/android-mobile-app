@@ -12,12 +12,28 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.safeair.ui.theme.navigation.Screen
 import com.example.safeair.ui.theme.SafeAirTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+import com.example.safeair.ui.theme.viewmodel.LoginViewModel
+import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+fun LoginScreen(navController: NavController, viewModelFactory: LoginViewModelFactory) {
+    var username by remember { mutableStateOf("test") }
+    var password by remember { mutableStateOf("qwerty123") }
+    val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
+    val isLoading by viewModel.isLoading.collectAsState()
+    val loginError by viewModel.loginError.collectAsState()
+    val isLoggedIn by viewModel.isUserLoggedIn.collectAsState(initial = null)
+
+    LaunchedEffect(isLoggedIn) {
+        if (!isLoggedIn.isNullOrEmpty()) {
+            navController.navigate(Screen.Home.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -42,9 +58,9 @@ fun LoginScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -62,22 +78,28 @@ fun LoginScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        if (loginError != null) {
+            Text(
+                text = loginError!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
         Button(
             onClick = {
-                // In a real app, you would add authentication logic here.
-                // For now, we just navigate to the home screen.
-                navController.navigate(Screen.Home.route) {
-                    // This clears the back stack, so the user can't go back to Login.
-                    popUpTo(Screen.Login.route) {
-                        inclusive = true
-                    }
-                }
+                viewModel.login(username, password)
             },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Login")
+            if (isLoading) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+            } else {
+                Text("Login")
+            }
         }
     }
 }
@@ -85,8 +107,15 @@ fun LoginScreen(navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
+    val loginViewModelFactory = object : LoginViewModelFactory(
+        authService = null as Any as com.example.safeair.api.ApiServices,
+        tokenManager = null as Any as com.example.safeair.repository.TokenManager
+    ) {}
+
     SafeAirTheme {
-        // Use a dummy NavController for the preview
-        LoginScreen(navController = rememberNavController())
+        LoginScreen(
+            navController = rememberNavController(),
+            viewModelFactory = loginViewModelFactory
+        )
     }
 }
