@@ -34,7 +34,7 @@ class LoginViewModel(
             try {
                 val request = AuthModels.LoginRequest(username, password)
 
-                val response = authService.login(request) // Предполагаем, что это возвращает Response<LoginResponse>
+                val response = authService.login(request)
 
                 if (response.isSuccessful) {
                     val accessToken = response.body()?.access_token

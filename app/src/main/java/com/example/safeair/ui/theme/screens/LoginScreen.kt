@@ -20,8 +20,8 @@ import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavController, viewModelFactory: LoginViewModelFactory) {
-    var username by remember { mutableStateOf("test") }
-    var password by remember { mutableStateOf("qwerty123") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     val viewModel: LoginViewModel = viewModel(factory = viewModelFactory)
     val isLoading by viewModel.isLoading.collectAsState()
     val loginError by viewModel.loginError.collectAsState()
