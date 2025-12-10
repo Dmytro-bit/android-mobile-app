@@ -8,6 +8,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.safeair.api.ApiServices
 import com.example.safeair.api.RetrofitInstance
+import com.example.safeair.api.WeatherApiService
 import com.example.safeair.repository.TokenManager
 import com.example.safeair.ui.theme.navigation.AppNavigation
 import com.example.safeair.ui.theme.SafeAirTheme
@@ -17,6 +18,7 @@ import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 class MainActivity : ComponentActivity() {
     private lateinit var tokenManager: TokenManager
     private lateinit var authService: ApiServices
+    private lateinit var weatherApiService: WeatherApiService
     private lateinit var loginViewModelFactory: LoginViewModelFactory
     private lateinit var homeViewModelFactory: HomeViewModelFactory
 
@@ -25,11 +27,11 @@ class MainActivity : ComponentActivity() {
 
         tokenManager = TokenManager.getInstance(applicationContext)
 
+        val authRetrofit = RetrofitInstance.createAuthRetrofit(tokenManager)
+        authService = RetrofitInstance.createApiService(authRetrofit)
 
-        val retrofit = RetrofitInstance.createRetrofit(tokenManager)
-
-
-        authService = RetrofitInstance.createApiService(retrofit)
+        val weatherRetrofit = RetrofitInstance.createWeatherRetrofit()
+        weatherApiService = RetrofitInstance.createWeatherApiService(weatherRetrofit)
 
         loginViewModelFactory = LoginViewModelFactory(
             authService = authService,
@@ -37,7 +39,7 @@ class MainActivity : ComponentActivity() {
         )
         
         homeViewModelFactory = HomeViewModelFactory(
-            apiService = authService
+            weatherApiService = weatherApiService
         )
         
         super.onCreate(savedInstanceState)

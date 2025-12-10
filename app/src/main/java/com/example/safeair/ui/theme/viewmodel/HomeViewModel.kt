@@ -2,14 +2,14 @@ package com.example.safeair.ui.theme.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.safeair.api.ApiServices
+import com.example.safeair.api.WeatherApiService
 import com.example.safeair.api.WeatherResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val apiService: ApiServices
+    private val weatherApiService: WeatherApiService
 ) : ViewModel() {
     private val _weatherData = MutableStateFlow<WeatherResponse?>(null)
     val weatherData = _weatherData.asStateFlow()
@@ -21,16 +21,15 @@ class HomeViewModel(
     val error = _error.asStateFlow()
 
     init {
-        // Default coordinates (can be made configurable)
-        fetchWeather(33.44, -94.04)
+        fetchWeather(54.00, 6.25)
     }
 
-    fun fetchWeather(lat: Double, lon: Double) {
+    fun fetchWeather(latitude: Double, longitude: Double) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             try {
-                val response = apiService.getWeather(lat, lon)
+                val response = weatherApiService.getWeather(latitude, longitude)
                 if (response.isSuccessful) {
                     _weatherData.value = response.body()
                 } else {

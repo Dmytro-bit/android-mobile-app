@@ -9,12 +9,15 @@ import retrofit2.http.Query
 interface ApiServices {
     @POST("auth/login")
     suspend fun login(@Body request: AuthModels.LoginRequest): Response<AuthModels.LoginResponse>
+}
 
-    @GET("data/3.0/onecall?appid=4e66c9fd5cbe74ec093077c62c23c0a6")
+interface WeatherApiService {
+    @GET("v1/forecast")
     suspend fun getWeather(
-        @Query("lat") lat: Double,
-        @Query("lon") lon: Double,
-        @Query("units") units: String = "metric",
-        @Query("exclude") exclude: String = "minutely,alerts"
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double,
+        @Query("daily") daily: String = "temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,rain_sum,wind_speed_10m_max,weather_code",
+        @Query("hourly") hourly: String = "temperature_2m,weather_code,relative_humidity_2m,visibility,wind_speed_10m,cloud_cover_mid,cloud_cover_low,cloud_cover_high,cloud_cover",
+        @Query("current") current: String = "cloud_cover"
     ): Response<WeatherResponse>
 }

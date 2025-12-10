@@ -6,15 +6,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,8 +23,11 @@ import com.example.safeair.api.WeatherResponse
 import com.example.safeair.ui.theme.viewmodel.HomeViewModel
 import com.example.safeair.ui.theme.viewmodel.HomeViewModelFactory
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
-
+import com.example.safeair.R
 @Composable
 fun HomeScreenRoute(
     viewModelFactory: HomeViewModelFactory? = null,
@@ -52,41 +52,28 @@ fun HomeScreenRoute(
 fun HomeScreen(
     weatherData: WeatherResponse?,
     isLoading: Boolean,
-    error: String?
+    error: String?,
+    isDay: Boolean = true
 ) {
-    val context = LocalContext.current
-    
-    // Determine if it's day or night based on current time and sunrise/sunset
-    val isDay = weatherData?.let { data ->
-        val currentTime = System.currentTimeMillis() / 1000
-        // Use current time from API if available, otherwise use system time
-        val timeToCheck = if (data.current.dt > 0) data.current.dt else currentTime
-        timeToCheck >= data.current.sunrise && timeToCheck < data.current.sunset
-    } ?: true
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background Image
         Image(
             painter = painterResource(
-                id = if (isDay) R.drawable.day else R.drawable.night
+                id = R.drawable.day
             ),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
-        // Content
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Top Bar
-            TopBar()
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Current Weather Card
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -99,76 +86,32 @@ fun HomeScreen(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             } else if (weatherData != null) {
-                CurrentWeatherCard(weatherData)
+                CurrentWeatherCard(weatherData, isDay)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Forecast Panel
             if (weatherData != null) {
-                ForecastPanel(weatherData.daily.take(5), isDay)
+                ForecastPanel(weatherData, isDay)
             }
         }
     }
 }
 
-@Composable
-fun TopBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Hamburger Menu
-        IconButton(onClick = { /* Handle menu click */ }) {
-            Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Menu",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-
-        // ADD Button
-        Button(
-            onClick = { /* Handle add click */ },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White.copy(alpha = 0.3f)
-            ),
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.height(36.dp)
-        ) {
-            Text(
-                text = "ADD",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
 
 @Composable
-fun CurrentWeatherCard(weatherData: WeatherResponse) {
-    val current = weatherData.current
+fun CurrentWeatherCard(weatherData: WeatherResponse, isDay: Boolean) {
+    val currentTemp = weatherData.hourly.temperature_2m.firstOrNull() ?: 0.0
+    val tempCelsius = currentTemp.toInt()
+
+    val currentWeatherCode = weatherData.hourly.weather_code.firstOrNull() ?: 0
+
     val location = weatherData.timezone.split("/").lastOrNull() ?: weatherData.timezone
-    
-    // Convert Kelvin to Celsius (if temp > 100, assume it's Kelvin)
-    val tempCelsius = if (current.temp > 100) {
-        (current.temp - 273.15).toInt()
-    } else {
-        current.temp.toInt()
-    }
-    
-    // Format date
+
     val dateFormat = SimpleDateFormat("EEEE dd/M/yyyy", Locale.getDefault())
-    val date = dateFormat.format(Date(current.dt * 1000))
-    
-    // Weather icon URL
-    val iconUrl = "https://openweathermap.org/img/wn/${current.weather.firstOrNull()?.icon}@2x.png"
-    val isDay = current.dt >= weatherData.current.sunrise && current.dt < weatherData.current.sunset
+    val currentDate = dateFormat.format(Date())
+
+    val iconUrl = getWeatherIconUrl(currentWeatherCode, isDay)
 
     Card(
         modifier = Modifier
@@ -189,16 +132,14 @@ fun CurrentWeatherCard(weatherData: WeatherResponse) {
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Weather Icon
             Image(
                 painter = rememberAsyncImagePainter(iconUrl),
-                contentDescription = current.weather.firstOrNull()?.description,
+                contentDescription = getWeatherDescription(currentWeatherCode),
                 modifier = Modifier.size(120.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Location
             Text(
                 text = location,
                 fontSize = 28.sp,
@@ -208,7 +149,6 @@ fun CurrentWeatherCard(weatherData: WeatherResponse) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Temperature
             Text(
                 text = "$tempCelsius°C",
                 fontSize = 64.sp,
@@ -218,9 +158,8 @@ fun CurrentWeatherCard(weatherData: WeatherResponse) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Date
             Text(
-                text = date,
+                text = currentDate,
                 fontSize = 18.sp,
                 color = Color.White.copy(alpha = 0.9f)
             )
@@ -229,7 +168,15 @@ fun CurrentWeatherCard(weatherData: WeatherResponse) {
 }
 
 @Composable
-fun ForecastPanel(dailyForecast: List<com.example.safeair.api.DailyWeather>, isDay: Boolean) {
+fun ForecastPanel(weatherData: WeatherResponse, isDay: Boolean) {
+    val dailyForecast = weatherData.daily.time.take(5).mapIndexed { index, date ->
+        DailyForecastItem(
+            date = date,
+            temperature = weatherData.daily.temperature_2m_max.getOrNull(index) ?: 0.0,
+            weatherCode = weatherData.daily.weather_code.getOrNull(index) ?: 0
+        )
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -255,7 +202,6 @@ fun ForecastPanel(dailyForecast: List<com.example.safeair.api.DailyWeather>, isD
             }
         }
 
-        // Scroll indicator
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -275,20 +221,25 @@ fun ForecastPanel(dailyForecast: List<com.example.safeair.api.DailyWeather>, isD
     }
 }
 
+data class DailyForecastItem(
+    val date: String,
+    val temperature: Double,
+    val weatherCode: Int
+)
+
 @Composable
-fun ForecastDayItem(day: com.example.safeair.api.DailyWeather, isDay: Boolean) {
-    val dateFormat = SimpleDateFormat("EEEE", Locale.getDefault())
-    val dayName = dateFormat.format(Date(day.dt * 1000))
-    
-    // Convert Kelvin to Celsius (if temp > 100, assume it's Kelvin)
-    val tempCelsius = if (day.temp.day > 100) {
-        (day.temp.day - 273.15).toInt()
-    } else {
-        day.temp.day.toInt()
+fun ForecastDayItem(day: DailyForecastItem, isDay: Boolean) {
+    val dayName = try {
+        val date = Instant.parse(day.date).atZone(ZoneId.systemDefault()).toLocalDate()
+        val formatter = DateTimeFormatter.ofPattern("EEEE", Locale.getDefault())
+        date.format(formatter)
+    } catch (e: Exception) {
+        day.date
     }
-    
-    // Weather icon URL
-    val iconUrl = "https://openweathermap.org/img/wn/${day.weather.firstOrNull()?.icon}@2x.png"
+
+    val tempCelsius = day.temperature.toInt()
+
+    val iconUrl = getWeatherIconUrl(day.weatherCode, isDay)
 
     Column(
         modifier = Modifier
@@ -297,7 +248,6 @@ fun ForecastDayItem(day: com.example.safeair.api.DailyWeather, isDay: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Day name
         Text(
             text = dayName,
             fontSize = 16.sp,
@@ -306,19 +256,64 @@ fun ForecastDayItem(day: com.example.safeair.api.DailyWeather, isDay: Boolean) {
             textAlign = TextAlign.Center
         )
 
-        // Weather Icon
         Image(
             painter = rememberAsyncImagePainter(iconUrl),
-            contentDescription = day.weather.firstOrNull()?.description,
+            contentDescription = getWeatherDescription(day.weatherCode),
             modifier = Modifier.size(48.dp)
         )
 
-        // Temperature
         Text(
             text = "$tempCelsius°C",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
+    }
+}
+
+
+
+// Chat GPT conversion
+fun getWeatherIconUrl(wmoCode: Int, isDay: Boolean): String {
+    val icon = when (wmoCode) {
+        0 -> "01" // Clear sky
+        1 -> "02" // Mainly clear
+        2 -> "02" // Partly cloudy
+        3 -> "04" // Overcast
+        45, 48 -> "50" // Fog
+        51, 53, 55 -> "09" // Drizzle
+        56, 57 -> "09" // Freezing drizzle
+        61, 63, 65 -> "10" // Rain
+        66, 67 -> "13" // Freezing rain
+        71, 73, 75 -> "13" // Snow
+        77 -> "13" // Snow grains
+        80, 81, 82 -> "09" // Rain showers
+        85, 86 -> "13" // Snow showers
+        95 -> "11" // Thunderstorm
+        96, 99 -> "11" // Thunderstorm with hail
+        else -> "02" // Default
+    }
+    val dayNight = if (isDay) "d" else "n"
+    return "https://openweathermap.org/img/wn/${icon}${dayNight}@2x.png"
+}
+
+fun getWeatherDescription(wmoCode: Int): String {
+    return when (wmoCode) {
+        0 -> "Clear sky"
+        1 -> "Mainly clear"
+        2 -> "Partly cloudy"
+        3 -> "Overcast"
+        45, 48 -> "Fog"
+        51, 53, 55 -> "Drizzle"
+        56, 57 -> "Freezing drizzle"
+        61, 63, 65 -> "Rain"
+        66, 67 -> "Freezing rain"
+        71, 73, 75 -> "Snow"
+        77 -> "Snow grains"
+        80, 81, 82 -> "Rain showers"
+        85, 86 -> "Snow showers"
+        95 -> "Thunderstorm"
+        96, 99 -> "Thunderstorm with hail"
+        else -> "Unknown"
     }
 }

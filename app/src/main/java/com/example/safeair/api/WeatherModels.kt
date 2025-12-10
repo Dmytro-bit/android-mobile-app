@@ -1,74 +1,79 @@
 package com.example.safeair.api
 
 data class WeatherResponse(
-    val lat: Double,
-    val lon: Double,
+    val latitude: Double,
+    val longitude: Double,
+    val generationtime_ms: Double,
+    val utc_offset_seconds: Int,
     val timezone: String,
-    val timezone_offset: Int,
+    val timezone_abbreviation: String,
+    val elevation: Double,
+    val current_units: CurrentUnits,
     val current: CurrentWeather,
-    val daily: List<DailyWeather>
+    val hourly_units: HourlyUnits,
+    val hourly: HourlyWeather,
+    val daily_units: DailyUnits,
+    val daily: DailyWeather
+)
+
+data class CurrentUnits(
+    val time: String,
+    val interval: String,
+    val cloud_cover: String
 )
 
 data class CurrentWeather(
-    val dt: Long,
-    val sunrise: Long,
-    val sunset: Long,
-    val temp: Double,
-    val feels_like: Double,
-    val pressure: Int,
-    val humidity: Int,
-    val dew_point: Double,
-    val uvi: Double,
-    val clouds: Int,
-    val visibility: Int,
-    val wind_speed: Double,
-    val wind_deg: Int,
-    val wind_gust: Double?,
-    val weather: List<WeatherInfo>
+    val time: String,
+    val interval: Int,
+    val cloud_cover: Double
+)
+
+data class HourlyUnits(
+    val time: String,
+    val temperature_2m: String,
+    val weather_code: String,
+    val relative_humidity_2m: String,
+    val visibility: String,
+    val wind_speed_10m: String,
+    val cloud_cover_mid: String,
+    val cloud_cover_low: String,
+    val cloud_cover_high: String,
+    val cloud_cover: String
+)
+
+data class HourlyWeather(
+    val time: List<String>,
+    val temperature_2m: List<Double>,
+    val weather_code: List<Int>,
+    val relative_humidity_2m: List<Double>,
+    val visibility: List<Double>,
+    val wind_speed_10m: List<Double>,
+    val cloud_cover_mid: List<Double>,
+    val cloud_cover_low: List<Double>,
+    val cloud_cover_high: List<Double>,
+    val cloud_cover: List<Double>
+)
+
+data class DailyUnits(
+    val time: String,
+    val temperature_2m_max: String,
+    val temperature_2m_min: String,
+    val sunrise: String,
+    val sunset: String,
+    val uv_index_max: String,
+    val rain_sum: String,
+    val wind_speed_10m_max: String,
+    val weather_code: String
 )
 
 data class DailyWeather(
-    val dt: Long,
-    val sunrise: Long,
-    val sunset: Long,
-    val moonrise: Long,
-    val moonset: Long,
-    val moon_phase: Double,
-    val summary: String,
-    val temp: Temperature,
-    val feels_like: FeelsLike,
-    val pressure: Int,
-    val humidity: Int,
-    val dew_point: Double,
-    val wind_speed: Double,
-    val wind_deg: Int,
-    val wind_gust: Double?,
-    val weather: List<WeatherInfo>,
-    val clouds: Int,
-    val pop: Double,
-    val rain: Double?,
-    val uvi: Double
-)
-
-data class Temperature(
-    val day: Double,
-    val min: Double,
-    val max: Double,
-    val night: Double,
-    val eve: Double,
-    val morn: Double
-)
-
-data class FeelsLike(
-    val day: Double,
-    val night: Double,
-    val eve: Double,
-    val morn: Double
-)
-
-data class WeatherInfo(
-    val id: Int,
-    val main: String,
-    val description: String,
-    val icon: String
+    val time: List<String>,
+    val temperature_2m_max: List<Double>,
+    val temperature_2m_min: List<Double>,
+    val sunrise: List<String>,
+    val sunset: List<String>,
+    val uv_index_max: List<Double>,
+    val rain_sum: List<Double>,
+    val wind_speed_10m_max: List<Double>,
+    val weather_code: List<Int>
 )
