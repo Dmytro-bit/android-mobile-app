@@ -1,8 +1,8 @@
 package com.example.safeair.ui.theme.navigation
 
 import com.example.safeair.ui.theme.screens.HomeScreenRoute
+import com.example.safeair.ui.theme.screens.SettingsScreen
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -27,7 +27,11 @@ fun AppNavigation(
         }
 
         composable(Screen.Home.route) {
-            HomeScreenRoute(viewModelFactory = homeViewModelFactory)
+            HomeScreenRoute(navController = navController, viewModelFactory = homeViewModelFactory)
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(navController = navController)
         }
     }
 }

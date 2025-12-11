@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +20,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.safeair.api.WeatherResponse
+import com.example.safeair.ui.theme.navigation.Screen
 import com.example.safeair.ui.theme.viewmodel.HomeViewModel
 import com.example.safeair.ui.theme.viewmodel.HomeViewModelFactory
 import java.text.SimpleDateFormat
@@ -30,6 +34,7 @@ import java.util.*
 import com.example.safeair.R
 @Composable
 fun HomeScreenRoute(
+    navController: NavController,
     viewModelFactory: HomeViewModelFactory? = null,
     viewModel: HomeViewModel = if (viewModelFactory != null) {
         androidx.lifecycle.viewmodel.compose.viewModel(factory = viewModelFactory)
@@ -42,6 +47,7 @@ fun HomeScreenRoute(
     val error by viewModel.error.collectAsState()
 
     HomeScreen(
+        navController = navController,
         weatherData = weatherData,
         isLoading = isLoading,
         error = error
@@ -50,6 +56,7 @@ fun HomeScreenRoute(
 
 @Composable
 fun HomeScreen(
+    navController: NavController,
     weatherData: WeatherResponse?,
     isLoading: Boolean,
     error: String?,
@@ -71,6 +78,23 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = { navController.navigate(Screen.Settings.route) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
