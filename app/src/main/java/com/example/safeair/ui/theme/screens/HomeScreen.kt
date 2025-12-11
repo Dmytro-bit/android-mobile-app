@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// --- Data Model & ViewModel (Remain Unchanged) ---
 data class AirQualityData(
     val id: String,
     val location: String,
@@ -69,27 +68,22 @@ class HomeViewModel : ViewModel() {
     }
 }
 
-// --- 1. SMART COMPOSABLE (Entry Point) ---
 @Composable
 fun HomeScreenRoute(
     viewModel: HomeViewModel = viewModel()
 ) {
-    // This composable holds the state and logic
     val airQualityList by viewModel.airQualityData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Pass the state and events down to the dumb UI composable
     HomeScreen(
         isLoading = isLoading,
         airQualityList = airQualityList,
         onCardClick = { location ->
             Log.d("HomeScreenRoute", "Card clicked for location: $location")
-            // Handle navigation or other actions here
         }
     )
 }
 
-// --- 2. DUMB COMPOSABLE (Stateless UI) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -132,7 +126,6 @@ fun HomeScreen(
     }
 }
 
-// --- THIS IS THE SINGLE, CORRECT VERSION ---
 @Composable
 fun AirQualityList(
     dataList: List<AirQualityData>,
@@ -156,8 +149,7 @@ fun AirQualityList(
                 AirQualityCard(
                     data = data,
                     onClick = { onCardClick(data.location) },
-                    // The experimental modifier has been removed.
-                    // We pass a default modifier to keep the layout correct.
+
                     modifier = Modifier
                 )
             }
@@ -165,15 +157,15 @@ fun AirQualityList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // Needed for clickable Card in M3
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AirQualityCard(
     data: AirQualityData,
-    onClick: () -> Unit, // Accept the event
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = onClick, // Make the Card clickable
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = MaterialTheme.shapes.medium
@@ -215,7 +207,6 @@ fun LoadingIndicator() {
     }
 }
 
-// --- PREVIEWS ---
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview_LoadedState() {
