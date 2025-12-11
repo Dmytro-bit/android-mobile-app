@@ -1,11 +1,11 @@
 package com.example.safeair.ui.theme.navigation
 
-import com.example.safeair.ui.theme.screens.HomeScreenRoute
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.safeair.ui.theme.screens.HomeScreenRoute
 import com.example.safeair.ui.theme.screens.LoginScreen
 import com.example.safeair.ui.theme.viewmodel.LoginViewModelFactory
 
@@ -23,7 +23,7 @@ fun AppNavigation(loginViewModelFactory: LoginViewModelFactory) {
         }
 
         composable(Screen.Home.route) {
-            HomeScreenRoute()
+            HomeScreenRoute(navController = navController)
         }
     }
 }

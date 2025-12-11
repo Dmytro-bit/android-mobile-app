@@ -40,3 +40,24 @@ object RetrofitInstance {
         return retrofit.create(ApiServices::class.java)
     }
 }
+
+class RetrofitWeatherInstance {
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
+    }
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://api.weatherbit.io/v2.0/")
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val apiServices: WeatherService = retrofit.create(WeatherService::class.java)
+}
